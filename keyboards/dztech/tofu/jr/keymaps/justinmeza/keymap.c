@@ -15,10 +15,12 @@
  */
 
 #include QMK_KEYBOARD_H
+#include "unicode.h"
 
 // #define DV1 0  // Programmer DVORAK
 // #define DV2 1  // Shifted Programmer DVORAK
-#define QW1 0  // QWERTY
+// #define QW1 0  // QWERTY
+#define JP1 0  // 日本語 QWERTY
 #define TF1 1  // Team Fortress 2
 #define FN1 2  // Functions
 #define FN2 3  // More functions
@@ -85,6 +87,7 @@ enum custom_keycodes {
     TF2_YES,
     TF2_NO,
     TF2_SPY,
+    US_BSLS_PIPE,  // tap: '\' ; Shift+tap: '|'
 };
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
@@ -129,6 +132,24 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             SEND_STRING("x2");
         }
         break;
+    case US_BSLS_PIPE:
+        if (record->event.pressed) {
+            uint8_t mods = get_mods() | get_oneshot_mods();
+            bool shifted = (mods & MOD_MASK_SHIFT);
+
+            del_oneshot_mods(MOD_MASK_SHIFT);
+            unregister_mods(MOD_MASK_SHIFT);
+
+            if (shifted) {
+                tap_code16(S(KC_INT3));   // Shifted Yen key -> '|'
+            } else {
+                tap_code(KC_INT3);        // Yen key -> '\' (may render as ¥ glyph)
+            }
+
+            register_mods(mods & MOD_MASK_SHIFT);
+            return false;
+        }
+        break;
     }
     return true;
 };
@@ -148,13 +169,21 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 //        CW_TOGG,   KC_DQUO, S(KC_Q), S(KC_J), S(KC_K), S(KC_X), S(KC_B), S(KC_M), S(KC_W), S(KC_V), S(KC_Z), CW_TOGG,          _______,   _______,
 //        _______,   _______, _______,                            _______,          _______, _______, _______,          _______, _______,   _______
 //    ),
-    [QW1] = LAYOUT_65_ansi(
-        KC_GRV,                KC_1,    KC_2,    KC_3,    KC_4,    KC_5,    KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,  KC_BSPC, KC_HOME,
-        KC_TAB,                KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS, KC_PGUP,
-        MT(MOD_LCTL, KC_ESC),  KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,          KC_ENT,  KC_PGDN,
-        KC_LSFT,               KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,          KC_UP,   KC_END,
+    // [QW1] = LAYOUT_65_ansi(
+    //     KC_GRV,                KC_1,    KC_2,    KC_3,    KC_4,    KC_5,    KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,  KC_BSPC, KC_HOME,
+    //     KC_TAB,                KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS, KC_PGUP,
+    //     MT(MOD_LCTL, KC_ESC),  KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,          KC_ENT,  KC_PGDN,
+    //     KC_LSFT,               KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,          KC_UP,   KC_END,
+// //        MO(FN1),               KC_LGUI, KC_LALT,                            KC_SPC,           TO(TF1), DF(DV1), MO(FN2),          KC_LEFT, KC_DOWN, KC_RGHT
+    //     MO(FN1),               KC_LGUI, KC_LALT,                            KC_SPC,           TO(TF1), _______, MO(FN2),          KC_LEFT, KC_DOWN, KC_RGHT
+    // ),
+    [JP1] = LAYOUT_65_ansi(
+        KC_GRV,                KC_1,    KC_2,    KC_3,    KC_4,    KC_5,    KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,  KC_BSPC,      KC_INT3,
+        KC_TAB,                KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_RBRC, KC_BSLS, US_BSLS_PIPE, KC_LBRC,
+        MT(MOD_LCTL, KC_ESC),  KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,          KC_ENT,       KC_BSLS,
+        KC_LSFT,               KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,          KC_UP,        KC_INT1,
 //        MO(FN1),               KC_LGUI, KC_LALT,                            KC_SPC,           TO(TF1), DF(DV1), MO(FN2),          KC_LEFT, KC_DOWN, KC_RGHT
-        MO(FN1),               KC_LGUI, KC_LALT,                            KC_SPC,           TO(TF1), _______, MO(FN2),          KC_LEFT, KC_DOWN, KC_RGHT
+        MO(FN1),               KC_LGUI, KC_LALT,                            KC_SPC,           KC_INT4, KC_INT2, KC_INT5,          KC_LEFT, KC_DOWN,      KC_RGHT
     ),
     [TF1] = LAYOUT_65_ansi(
         _______, _______,    _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,     _______,      _______,
@@ -162,14 +191,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, KC_A,       KC_S,    KC_D,    KC_F,    _______, _______, _______, _______, _______, _______, _______,              _______,      _______,
         KC_LSFT, TF2_THANKS, TF2_NO,  TF2_SPY, _______, _______, _______, _______, _______, _______, _______, _______,              TF2_MOVE_UP,  _______,
 //        _______, _______,    _______,                            _______,          TO(DV1), _______, _______,          TF2_GO_LEFT, TF2_INCOMING, TF2_GO_RIGHT
-        _______, _______,    _______,                            _______,          TO(QW1), _______, _______,          TF2_GO_LEFT, TF2_INCOMING, TF2_GO_RIGHT
+        _______, _______,    _______,                            _______,          TO(JP1), _______, _______,          TF2_GO_LEFT, TF2_INCOMING, TF2_GO_RIGHT
     ),
     [FN1] = LAYOUT_65_ansi(
         _______, KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,  KC_F12,  KC_DEL,  _______,
         _______, RGB_TOG, RGB_MOD, RGB_HUI, RGB_HUD, RGB_SAI, RGB_SAD, RGB_VAI, RGB_VAD, _______, KC_PSCR, KC_SCRL, KC_PAUS, _______, _______,
         KC_LCTL, RGB_SPI, RGB_SPD, _______, _______, _______, _______, _______, _______, _______, _______, _______,          _______, _______,
         KC_LSFT, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,          KC_VOLU, KC_MUTE,
-        _______, _______, _______,                            KC_MPLY,          _______, _______, _______,          KC_MPRV, KC_VOLD, KC_MNXT
+        _______, _______, _______,                            KC_MPLY,          TO(TF1), _______, MO(FN2),          KC_MPRV, KC_VOLD, KC_MNXT
     ),
     [FN2] = LAYOUT_65_ansi(
         EE_CLR,  _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
